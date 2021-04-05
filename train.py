@@ -16,7 +16,8 @@
 """Main script for training multiplane image (MPI) network.
 """
 from __future__ import division
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from stereomag.sequence_data_loader import SequenceDataLoader
 from stereomag.mpi import MPI
@@ -24,11 +25,12 @@ from stereomag.mpi import MPI
 # Note that the flags below are a subset of all flags. The remainder (data
 # loading relevant) are defined in loader.py.
 flags = tf.app.flags
+dataPath = '/data/Mengying/stereo-magnification/RealEstate10K_p/'
 flags.DEFINE_string('checkpoint_dir', 'checkpoints',
                     'Location to save the models.')
-flags.DEFINE_string('cameras_glob', 'train/????????????????.txt',
+flags.DEFINE_string('cameras_glob', dataPath + 'train/????????????????.txt',
                     'Glob string for training set camera files.')
-flags.DEFINE_string('image_dir', 'images',
+flags.DEFINE_string('image_dir', dataPath + 'images',
                     'Path to training image directories.')
 flags.DEFINE_string('experiment_name', '', 'Name for the experiment to run.')
 flags.DEFINE_integer('random_seed', 8964, 'Random seed.')

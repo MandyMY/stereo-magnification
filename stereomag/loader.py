@@ -19,10 +19,12 @@ For easiest setup, use create_from_flags, then you won't have to specify any
 additional options.
 """
 import os.path
-import tensorflow as tf
-from tensorflow import flags
-import datasets
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+#from tensorflow import flags
+from . import datasets
 
+flags = tf.app.flags
 flags.DEFINE_integer('epochs', -1,
                      'Epochs of training data, or -1 to continue indefinitely.')
 
@@ -38,7 +40,7 @@ flags.DEFINE_float('augment_min_scale', 1.0,
 flags.DEFINE_float('augment_max_scale', 1.15,
                    'Maximum scale for data augmentation.')
 
-flags.DEFINE_integer('batch_size', 8, 'The size of a sample batch.')
+flags.DEFINE_integer('batch_size', 4, 'The size of a sample batch.')
 
 FLAGS = flags.FLAGS
 
@@ -153,7 +155,7 @@ class Loader(object):
       return sequence.set_batched_shape(batch_size, sequence_length)
 
     def batch_and_prefetch(dataset):
-      return (dataset.padded_batch(batch_size, dataset.output_shapes)
+      return (dataset.padded_batch(batch_size, tf.data.get_output_shapes(dataset))
               .filter(full_batches).map(set_batched_shape).prefetch(prefetch))
 
     # Training sequences are treated different because they are randomised
@@ -194,9 +196,9 @@ def create_from_flags(cameras_glob='train/????????????????.txt',
                       map_function=None):
   """Convenience function to return a Loader configured by flags."""
   assert tf.gfile.IsDirectory(image_dir)  # Ensure the provided path is valid.
-  assert tf.gfile.ListDirectory(image_dir) > 0  # Ensure that some data exists.
+  assert len(tf.gfile.ListDirectory(image_dir)) > 0  # Ensure that some data exists.
   parallelism = 10
-
+  
   assert tf.gfile.Glob(cameras_glob)
   files = tf.data.Dataset.list_files(cameras_glob, False)
   lines = files.map(datasets.read_file_lines, num_parallel_calls=parallelism)

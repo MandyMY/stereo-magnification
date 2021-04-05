@@ -19,13 +19,17 @@
 from __future__ import division
 import os
 import sys
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from stereomag.mpi import MPI
 from stereomag.utils import build_matrix
 from stereomag.utils import write_image
 from stereomag.utils import write_intrinsics
 from stereomag.utils import write_pose
+
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 flags = tf.app.flags
 
@@ -206,14 +210,14 @@ def get_inputs(padx, pady):
   original_height = shape1_before_crop[0] - 2 * pady
   eventual_width = shape1_after_crop[1]
   eventual_height = shape1_after_crop[0]
-  fx = tf.multiply(tf.to_float(original_width), FLAGS.fx)
-  fy = tf.multiply(tf.to_float(original_height), FLAGS.fy)
+  fx = tf.multiply(tf.cast(original_width, float), FLAGS.fx)
+  fy = tf.multiply(tf.cast(original_height, float), FLAGS.fy)
 
   # The MPI code may fail if the principal point is not in the center.  In
   # reality cropping might have shifted it by half a pixel, but we'll ignore
   # that here.
-  cx = tf.multiply(tf.to_float(eventual_width), 0.5)
-  cy = tf.multiply(tf.to_float(eventual_height), 0.5)
+  cx = tf.multiply(tf.cast(eventual_width, float), 0.5)
+  cy = tf.multiply(tf.cast(eventual_height, float), 0.5)
   intrinsics = build_matrix([[fx, 0.0, cx], [0.0, fy, cy],
                              [0.0, 0.0, 1.0]])[tf.newaxis, ...]
   inputs['ref_image'] = image1
@@ -237,8 +241,8 @@ def main(_):
   pady = int(max_multiple * abs(FLAGS.yshift) + 8)
   padx = int(max_multiple * abs(FLAGS.xshift) + 8)
 
-  print 'Padding inputs: padx=%d, pady=%d (max_multiple=%d)' % (padx, pady,
-                                                                max_multiple)
+  print ('Padding inputs: padx=%d, pady=%d (max_multiple=%d)' % (padx, pady,
+                                                                max_multiple))
   inputs, original_width, original_height = get_inputs(padx, pady)
 
   # MPI code requires images of known size. So we run the input part of the
@@ -253,8 +257,8 @@ def main(_):
   mpi_width = dimensions[2]
   assert dimensions[3] == channels
 
-  print 'Original size: width=%d, height=%d' % (original_width, original_height)
-  print '     MPI size: width=%d, height=%d' % (mpi_width, mpi_height)
+  print ('Original size: width=%d, height=%d' % (original_width, original_height))
+  print ('     MPI size: width=%d, height=%d' % (mpi_width, mpi_height))
 
   inputs['ref_image'].set_shape([batch, mpi_height, mpi_width, channels])
   inputs['src_images'].set_shape([batch, mpi_height, mpi_width, channels * 2])
@@ -277,7 +281,7 @@ def main(_):
   config = tf.ConfigProto()
 
   config.gpu_options.allow_growth = True
-  print 'Inferring MPI...'
+  print ('Inferring MPI...')
   with sv.managed_session(config=config) as sess:
     saver.restore(sess, ckpt_file)
     ins, outs = sess.run([inputs, outputs])
@@ -286,10 +290,10 @@ def main(_):
   tf.reset_default_graph()
   renders = {}
   if FLAGS.render:
-    print 'Rendering new views...'
+    print ('Rendering new views...')
     for index, multiple in enumerate(render_list):
       m = float(multiple)
-      print '    offset: %s' % multiple
+      print ('    offset: %s' % multiple)
       pose = build_matrix([[1.0, 0.0, 0.0, -m * FLAGS.xoffset],
                            [0.0, 1.0, 0.0, -m * FLAGS.yoffset],
                            [0.0, 0.0, 1.0, -m * FLAGS.zoffset],
@@ -308,7 +312,7 @@ def main(_):
   if not tf.gfile.IsDirectory(output_dir):
     tf.gfile.MakeDirs(output_dir)
 
-  print 'Saving results to %s' % output_dir
+  print ('Saving results to %s' % output_dir)
 
   # Write results to disk.
   for name, (index, image) in renders.items():
@@ -355,7 +359,7 @@ def main(_):
       fh.write('  %s \\\n' % arg)
     fh.write('  %s\n' % sys.argv[-1])
 
-  print 'Done.'
+  print ('Done.')
 
 
 if __name__ == '__main__':

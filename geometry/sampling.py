@@ -21,7 +21,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+import tensorflow_addons as tfa
 
 
 def bilinear_wrapper(imgs, coords):
@@ -44,7 +46,7 @@ def bilinear_wrapper(imgs, coords):
   imgs = tf.reshape(imgs, [prod_init_dims] + end_dims_img)
   coords = tf.reshape(
       coords, [prod_init_dims] + end_dims_coords)
-  imgs_sampled = tf.contrib.resampler.resampler(imgs, coords)
+  imgs_sampled = tfa.image.resampler(imgs, coords)
   imgs_sampled = tf.reshape(
       imgs_sampled, init_dims + imgs_sampled.get_shape().as_list()[-3::])
   return imgs_sampled

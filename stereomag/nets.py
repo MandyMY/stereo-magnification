@@ -17,8 +17,10 @@
 """
 from __future__ import division
 import numpy as np
-import tensorflow as tf
-from tensorflow.contrib import slim
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+#from tensorflow.contrib import slim
+import tf_slim as slim
 
 def mpi_net(inputs, num_outputs, ngf=64, vscope='net', reuse_weights=False):
   """Network definition for multiplane image (MPI) inference.

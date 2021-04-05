@@ -17,8 +17,10 @@
 """A collection of projection utility functions.
 """
 from __future__ import division
-import tensorflow as tf
-import homography
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+from . import homography
+import tensorflow_addons as tfa
 
 
 # Note that there is a subtle bug in how pixel coordinates are treated during
@@ -158,7 +160,7 @@ def projective_inverse_warp(
   proj_tgt_cam_to_src_pixel = tf.matmul(intrinsics, pose)
   src_pixel_coords = cam2pixel(cam_coords, proj_tgt_cam_to_src_pixel)
 
-  output_img = tf.contrib.resampler.resampler(img, src_pixel_coords)
+  output_img = tfa.image.resampler(img, src_pixel_coords)
   if ret_flows:
     return output_img, src_pixel_coords - cam_coords
   else:

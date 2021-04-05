@@ -19,19 +19,20 @@ import math
 import numpy as np
 import PIL.Image as pil
 from scipy import signal
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 
 def write_image(filename, image):
   """Save image to disk."""
   byte_image = np.clip(image, 0, 255).astype('uint8')
   image_pil = pil.fromarray(byte_image)
-  with tf.gfile.GFile(filename, 'w') as fh:
+  with tf.io.gfile.GFile(filename, 'w') as fh:
     image_pil.save(fh)
 
 
 def write_pose(filename, pose):
-  with tf.gfile.GFile(filename, 'w') as fh:
+  with tf.io.gfile.GFile(filename, 'w') as fh:
     for i in range(3):
       for j in range(4):
         fh.write('%f ' % (pose[i, j]))

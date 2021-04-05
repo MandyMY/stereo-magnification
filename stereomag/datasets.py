@@ -17,8 +17,9 @@
 import collections
 import math
 import os.path
-import tensorflow as tf
-import utils
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+from . import utils
 
 
 class ViewSequence(
@@ -181,10 +182,10 @@ class ViewSequence(
     if min_scale == 1.0 and max_scale == 1.0:
       scaled_image = self.image
     else:
-      input_size = tf.to_float(tf.shape(self.image)[-3:-1])
+      input_size = tf.cast(tf.shape(self.image)[-3:-1], tf.float32)
       scale_factor = tf.random_uniform([2], min_scale, max_scale)
       scaled_image = tf.image.resize_area(
-          self.image, tf.to_int32(input_size * scale_factor))
+          self.image, tf.cast(input_size * scale_factor, tf.int32))
 
     # Choose crop offset
     scaled_size = tf.shape(scaled_image)[-3:-1]
@@ -218,9 +219,10 @@ def read_file_lines(filename, max_lines=10000):
   """
   lines = (
       tf.data.TextLineDataset(filename)
-      .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
+      .filter(lambda line: tf.not_equal(tf.strings.substr(line, 0, 1), '#'))
       .batch(max_lines).take(1))
-  return tf.contrib.data.get_single_element(lines)
+  #return tf.contrib.data.get_single_element(lines)
+  return tf.data.experimental.get_single_element(lines)
 
 
 def parse_camera_lines(lines):
@@ -277,7 +279,7 @@ def load_image_data(base_path, height, width, parallel_image_reads):
 
   def load_single_image(filename):
     """Load and size a single image from a given filename."""
-    contents = tf.read_file(base_path + '/' + filename)
+    contents = tf.read_file(base_path + filename)
     image = tf.image.convert_image_dtype(
         tf.image.decode_image(contents), tf.float32)
     # Unfortunately resize_area expects batched images, so add a dimension,
@@ -289,11 +291,11 @@ def load_image_data(base_path, height, width, parallel_image_reads):
     return resized
 
   def mapper(sequence):
-    images = tf.contrib.data.get_single_element(
+    images = tf.data.experimental.get_single_element(
         tf.data.Dataset.from_tensor_slices(sequence.id + '/' + sequence.id +
                                            '_' + sequence.timestamp + '.jpg')
         .map(load_single_image, num_parallel_calls=parallel_image_reads).batch(
-            tf.to_int64(sequence.length())))
+            tf.cast(sequence.length(), tf.int64)))
     return ViewSequence(sequence.id, sequence.timestamp, sequence.intrinsics,
                         sequence.pose, images)
 
@@ -316,7 +318,7 @@ def crop_image_and_adjust_intrinsics(
     [..., height, width, C] cropped images,
     [..., 4] adjusted intrinsics
   """
-  shape = tf.to_float(tf.shape(image))
+  shape = tf.cast(tf.shape(image), tf.float32)
   original_height = shape[-3]
   original_width = shape[-2]
 
@@ -326,10 +328,10 @@ def crop_image_and_adjust_intrinsics(
       original_width, original_height, original_width, original_height])
   cropped_pixel_intrinsics = (
       pixel_intrinsics - tf.stack(
-          [0.0, 0.0, tf.to_float(offset_x), tf.to_float(offset_y)]))
+          [0.0, 0.0, tf.cast(offset_x, tf.float32), tf.cast(offset_y, tf.float32)]))
   cropped_intrinsics = (
       cropped_pixel_intrinsics
-      / tf.to_float(tf.stack([width, height, width, height])))
+      / tf.cast(tf.stack([width, height, width, height]), tf.float32))
   cropped_images = tf.image.crop_to_bounding_box(
       image, offset_y, offset_x, height, width)
   return cropped_images, cropped_intrinsics

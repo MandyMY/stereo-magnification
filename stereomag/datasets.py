@@ -273,7 +273,7 @@ def load_image_data(base_path, height, width, parallel_image_reads):
     input one, except that sequence.images have been filled in.
   """
   # Ensure base_path has just one trailing '/'.
-  base_path = os.path.dirname(os.path.join(base_path, 'file')) + '/'
+  base_path = os.path.dirname(os.path.join(base_path, 'file'))
 
   def load_single_image(filename):
     """Load and size a single image from a given filename."""
